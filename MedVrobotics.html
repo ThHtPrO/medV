@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
+    <title>MedV</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        scroll-behavior: smooth;
+        font-family: "Poppins", serif;
+      }
+
+      body {
+        background-color: #222831;
+      }
+
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+      }
+
+      header img {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+      }
+
+      .task-counts {
+        display: flex;
+        gap: 20px;
+        color: white;
+        font-size: 18px;
+      }
+
+      .task-counts span {
+        font-weight: bold;
+      }
+
+      .container {
+        padding-top: 80px;
+        padding-left: 10px;
+        padding-right: 10px;
+      }
+
+      .hero {
+        position: relative;
+        height: auto;
+        text-align: center;
+        padding-top: 50px;
+      }
+
+      .heroImg {
+        width: 250px;
+        height: 250px;
+        object-fit: cover;
+        border-radius: 30%;
+        margin-top: 20px;
+        transition: all 0.3s ease;
+      }
+
+      .heroSub {
+        padding-top: 10px;
+        opacity: 0;
+        animation: fadeIn 2s forwards;
+      }
+
+      .heroSub h1 {
+        opacity: 0;
+        animation: textFadeIn 2s forwards;
+        animation-delay: 1s;
+      }
+
+      .heroSub .name {
+        animation-delay: 0.5s;
+      }
+
+      .heroSub .title {
+        animation-delay: 1.5s;
+      }
+
+      .menu-btn {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        width: 30px;
+        height: 21px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        z-index: 100;
+      }
+
+      .menu-btn div {
+        width: 100%;
+        height: 4px;
+        background-color: #00adb5;
+      }
+
+      .menu {
+        display: none;
+        position: absolute;
+        top: 50px;
+        right: 20px;
+        background-color: rgba(0, 0, 0, 0.8);
+        width: 200px;
+        border-radius: 8px;
+        padding: 10px;
+        text-align: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        z-index: 99;
+      }
+
+      .menu a {
+        display: block;
+        padding: 15px;
+        color: white;
+        text-decoration: none;
+        font-size: 18px;
+        transition: background-color 0.3s ease;
+      }
+
+      .menu a:hover {
+        background-color: #575757;
+      }
+
+      .menu-btn.active + .menu {
+        display: block;
+        opacity: 1;
+      }
+
+      .tasks {
+        display: none;
+        text-align: center;
+        margin-top: 2rem;
+      }
+
+      .tasks.active {
+        display: block;
+      }
+
+      .task-item {
+        background-color: #444444;
+        color: white;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: box-shadow 0.3s ease-in-out;
+      }
+
+      .task-item.new-task {
+        box-shadow: 0 0 10px 5px #00adb5;
+      }
+
+      .task-item button {
+        background-color: #ff4c4c;
+        border: none;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+
+      .task-item button:hover {
+        background-color: #ff1a1a;
+      }
+
+      .add-task-form {
+        margin: 20px auto;
+        display: flex;
+        flex-direction: column;
+        max-width: 400px;
+        gap: 10px;
+        display: none;
+      }
+
+      .add-task-form.active {
+        display: flex;
+      }
+
+      .add-task-form input,
+      .add-task-form button {
+        padding: 10px;
+        font-size: 16px;
+      }
+
+      .add-task-form input {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+
+      .add-task-form button {
+        background-color: #00adb5;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+
+      .add-task-form button:hover {
+        background-color: #008e92;
+      }
+
+      .heroImg:hover {
+        box-shadow: 0 0 15px 5px #00adb5;
+        transform: scale(1.05);
+        transition: all 0.3s ease;
+      }
+
+      header img:hover {
+        box-shadow: 0 0 15px 5px #00adb5;
+        transform: scale(1.05);
+        transition: all 0.3s ease;
+      }
+
+      @keyframes fadeIn {
+        0% {
+          opacity: 0;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+
+      @keyframes textFadeIn {
+        0% {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Media Queries for Responsive Design */
+      @media screen and (max-width: 768px) {
+        .heroImg {
+          width: 200px;
+          height: 200px;
+        }
+
+        .heroSub h1 {
+          font-size: 20px;
+        }
+
+        .menu-btn {
+          top: 10px;
+          right: 10px;
+        }
+
+        .menu {
+          width: 100%;
+          right: 0;
+        }
+
+        header img {
+          width: 80px;
+          height: 80px;
+        }
+
+        .hero {
+          padding-top: 60px;
+        }
+
+        .heroImg {
+          margin-top: 10px;
+        }
+      }
+
+      @media screen and (max-width: 480px) {
+        .heroSub h1 {
+          font-size: 16px;
+        }
+
+        .menu a {
+          font-size: 14px;
+        }
+
+        .task-item {
+          padding: 10px;
+        }
+
+        .task-item button {
+          padding: 5px;
+          font-size: 14px;
+        }
+
+        .heroImg {
+          width: 180px;
+          height: 180px;
+          margin-top: 10px;
+        }
+
+        header img {
+          width: 70px;
+          height: 70px;
+        }
+      }
+
+      /* Chat Styles */
+      .chat-section {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+        background-color: #333;
+        border-radius: 10px;
+        color: white;
+      }
+
+      .online-users {
+        background-color: #444;
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .user-status {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 10px;
+        background-color: #555;
+        border-radius: 15px;
+        font-size: 14px;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+
+      .status-dot.online {
+        background-color: #00ff00;
+        box-shadow: 0 0 5px #00ff00;
+      }
+
+      .status-dot.offline {
+        background-color: #888;
+      }
+
+      .message .user-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        margin-right: 5px;
+      }
+
+      .chat-container {
+        display: flex;
+        flex-direction: column;
+        height: 400px;
+        background-color: #444;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .chat-messages {
+        flex-grow: 1;
+        padding: 20px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .message {
+        max-width: 70%;
+        padding: 10px 15px;
+        border-radius: 15px;
+        margin: 5px 0;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+
+      .message:hover {
+        opacity: 0.9;
+      }
+
+      .message.reply {
+        background-color: #2a2a2a;
+        border-left: 3px solid #00adb5;
+      }
+
+      .message .reply-content {
+        font-size: 0.9em;
+        color: #888;
+        margin-bottom: 5px;
+        padding-left: 10px;
+        border-left: 2px solid #00adb5;
+      }
+
+      .message.sent {
+        background-color: #00adb5;
+        align-self: flex-end;
+        border-bottom-right-radius: 5px;
+      }
+
+      .message.received {
+        background-color: #666;
+        align-self: flex-start;
+        border-bottom-left-radius: 5px;
+      }
+
+      .chat-input-container {
+        display: flex;
+        padding: 15px;
+        background-color: #333;
+        gap: 10px;
+      }
+
+      .chat-input-container input {
+        flex-grow: 1;
+        padding: 10px;
+        border: none;
+        border-radius: 5px;
+        background-color: #444;
+        color: white;
+      }
+
+      .chat-input-container button {
+        padding: 10px 20px;
+        background-color: #00adb5;
+        border: none;
+        border-radius: 5px;
+        color: white;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+
+      .chat-input-container button:hover {
+        background-color: #008e92;
+      }
+
+      /* Username Modal Styles */
+      .username-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.8);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .username-modal.active {
+        display: flex;
+      }
+
+      .username-form {
+        background-color: #333;
+        padding: 30px;
+        border-radius: 10px;
+        text-align: center;
+        color: white;
+        max-width: 400px;
+        width: 90%;
+      }
+
+      .username-form h2 {
+        margin-bottom: 20px;
+        color: #00adb5;
+      }
+
+      .username-form input {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px;
+        border: none;
+        border-radius: 5px;
+        background-color: #444;
+        color: white;
+      }
+
+      .username-form button {
+        background-color: #00adb5;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+
+      .username-form button:hover {
+        background-color: #008e92;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Username Modal -->
+    <div class="username-modal active" id="username-modal">
+      <div class="username-form">
+        <h2>Welcome to MedV-robotics</h2>
+        <p>Please enter your name to continue</p>
+        <input type="text" id="username-input" placeholder="Enter your name" />
+        <button onclick="setUsername()">Continue</button>
+      </div>
+    </div>
+
+    <div class="container">
+      <header>
+        <img src="WhatsApp Image 2025-03-26 at 23.15.07.png" alt="MedV logo" />
+        <div class="task-counts">
+          <span id="programming-count">Programming: 0</span>
+          <span id="building-design-count">Building & Design: 0</span>
+          <span id="outreach-count">Outreach: 0</span>
+        </div>
+      </header>
+      <hr />
+
+      <div class="menu-btn" onclick="toggleMenu(event)">
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+
+      <div class="menu">
+        <a href="#" onclick="showTasks('programming')">Programming</a>
+        <a href="#" onclick="showTasks('building-design')">Building & Design</a>
+        <a href="#" onclick="showTasks('outreach')">Outreach</a>
+        <a href="#" onclick="showChat()">Chat</a>
+      </div>
+
+      <section class="hero">
+        <div class="heroSub">
+          <h1 class="name">Welcome</h1>
+          <h1 class="title">MedV-robotics</h1>
+        </div>
+        <img src="WhatsApp Image 2025-03-26 at 21.55.58.jpeg" alt="hero image" class="heroImg" />
+      </section>
+
+      <!-- Task Form (initially hidden) -->
+      <div class="add-task-form" id="add-task-form">
+        <h2>Add Task</h2>
+        <input type="password" id="password" placeholder="Enter Password" />
+        <button onclick="validatePassword()">Submit</button>
+      </div>
+
+      <!-- Task Sections (Initially Hidden) -->
+      <section class="tasks" id="programming">
+        <h2>Programming Tasks</h2>
+        <div id="programming-tasks" class="task-list"></div>
+      </section>
+
+      <section class="tasks" id="building-design">
+        <h2>Building & Design Tasks</h2>
+        <div id="building-design-tasks" class="task-list"></div>
+      </section>
+
+      <section class="tasks" id="outreach">
+        <h2>Outreach Tasks</h2>
+        <div id="outreach-tasks" class="task-list"></div>
+      </section>
+
+      <!-- Chat Section -->
+      <section class="chat-section" id="chat-section" style="display: none;">
+        <h2>Team Chat</h2>
+        <div class="online-users" id="online-users">
+          <!-- Online users will be added here -->
+        </div>
+        <div class="chat-container">
+          <div class="chat-messages" id="chat-messages"></div>
+          <div class="chat-input-container">
+            <input type="text" id="chat-input" placeholder="Type your message..." />
+            <button onclick="sendMessage()">Send</button>
+          </div>
+        </div>
+      </section>
+
+      <hr />
+      <footer>
+        <!-- Optional footer content -->
+      </footer>
+    </div>
+
+    <script>
+      let currentUser = null;
+      let onlineUsers = new Set();
+
+      // Function to set username
+      function setUsername() {
+        const usernameInput = document.getElementById('username-input');
+        const username = usernameInput.value.trim();
+        
+        if (username) {
+          currentUser = username;
+          onlineUsers.add(username);
+          document.getElementById('username-modal').classList.remove('active');
+          document.querySelector('.container').style.display = 'block';
+          updateOnlineUsers();
+        } else {
+          alert('Please enter a valid name');
+        }
+      }
+
+      // Function to update online users list
+      function updateOnlineUsers() {
+        const onlineUsersContainer = document.getElementById('online-users');
+        onlineUsersContainer.innerHTML = '';
+        
+        onlineUsers.forEach(user => {
+          const userStatus = document.createElement('div');
+          userStatus.className = 'user-status';
+          userStatus.innerHTML = `
+            <span class="status-dot online"></span>
+            ${user}
+          `;
+          onlineUsersContainer.appendChild(userStatus);
+        });
+      }
+
+      // Function to toggle the visibility of the menu when the hamburger button is clicked
+      function toggleMenu(event) {
+        event.stopPropagation();
+        const menuBtn = document.querySelector('.menu-btn');
+        const menu = document.querySelector('.menu');
+        menuBtn.classList.toggle('active');
+        menu.classList.toggle('active');
+      }
+
+      // Function to display the tasks for each section dynamically
+      function showTasks(section) {
+        const allTasks = document.querySelectorAll('.tasks');
+        allTasks.forEach(task => task.classList.remove('active'));
+        document.getElementById('chat-section').style.display = 'none';
+
+        const selectedTask = document.getElementById(section);
+        const addTaskForm = document.getElementById('add-task-form');
+        if (selectedTask) {
+          selectedTask.classList.add('active');
+        }
+
+        addTaskForm.classList.add('active'); // Show the "Add Task" form
+        selectedTask.scrollIntoView({ behavior: "smooth" });
+
+        const menu = document.querySelector('.menu');
+        const menuBtn = document.querySelector('.menu-btn');
+        menu.classList.remove('active');
+        menuBtn.classList.remove('active');
+      }
+
+      // Function to show chat section
+      function showChat() {
+        const allTasks = document.querySelectorAll('.tasks');
+        allTasks.forEach(task => task.classList.remove('active'));
+        document.getElementById('add-task-form').classList.remove('active');
+        document.getElementById('chat-section').style.display = 'block';
+        document.getElementById('chat-section').scrollIntoView({ behavior: "smooth" });
+        updateOnlineUsers();
+
+        const menu = document.querySelector('.menu');
+        const menuBtn = document.querySelector('.menu-btn');
+        menu.classList.remove('active');
+        menuBtn.classList.remove('active');
+      }
+
+      // Function to validate the password and store the user
+      function validatePassword() {
+        const password = document.getElementById('password').value;
+        if (password === 'ftcmedv') {
+          currentUser = prompt('Enter your name');
+          alert('Password Correct! You can now add tasks.');
+          document.getElementById('add-task-form').innerHTML = `
+            <h2>Add Task</h2>
+            <input type="text" id="task-name" placeholder="Enter Task" />
+            <input type="text" id="task-person" placeholder="Assign To" />
+            <button onclick="addTask()">Add Task</button>
+          `;
+        } else {
+          alert('Incorrect password. Please try again.');
+        }
+      }
+
+      // Function to add a task
+      function addTask() {
+        const taskName = document.getElementById('task-name').value;
+        const taskPerson = document.getElementById('task-person').value;
+
+        if (taskName && taskPerson) {
+          const activeSection = document.querySelector('.tasks.active');
+          const taskList = activeSection.querySelector('.task-list');
+
+          const taskItem = document.createElement('div');
+          taskItem.classList.add('task-item', 'new-task');
+          taskItem.innerHTML = `
+            <span>${taskName} - Assigned to: ${taskPerson}</span>
+            <button onclick="deleteTask(this)">Delete</button>
+          `;
+          taskList.appendChild(taskItem);
+
+          updateTaskCount(activeSection.id); // Update the task count for the active section
+
+          document.getElementById('task-name').value = '';
+          document.getElementById('task-person').value = '';
+        }
+      }
+
+      // Function to update task counts for all sections
+      function updateTaskCount(sectionId) {
+        const taskList = document.getElementById(`${sectionId}-tasks`);
+        const taskCount = taskList.children.length;
+        
+        // Map section IDs to display names
+        const displayNames = {
+          'programming': 'Programming',
+          'building-design': 'Building & Design',
+          'outreach': 'Outreach'
+        };
+
+        document.getElementById(`${sectionId}-count`).textContent = `${displayNames[sectionId]}: ${taskCount}`;
+      }
+
+      // Function to delete a task
+      function deleteTask(button) {
+        const taskItem = button.parentElement;
+        taskItem.remove();
+
+        const activeSection = document.querySelector('.tasks.active');
+        updateTaskCount(activeSection.id); // Update the task count after deletion
+      }
+
+      // Function to send a message
+      function sendMessage() {
+        const input = document.getElementById('chat-input');
+        const message = input.value.trim();
+        
+        if (message) {
+          if (!handleReply(message)) {
+            const chatMessages = document.getElementById('chat-messages');
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', 'sent');
+            messageElement.innerHTML = `
+              <div class="user-status">
+                <span class="status-dot online"></span>
+                ${currentUser}
+              </div>
+              : ${message}
+            `;
+
+            // Add double-click event for reply
+            messageElement.addEventListener('dblclick', function(e) {
+              e.stopPropagation();
+              const originalMessage = message;
+              const originalUser = currentUser;
+              const chatInput = document.getElementById('chat-input');
+              chatInput.value = `@${originalUser} ${originalMessage}\n`;
+              chatInput.focus();
+            });
+
+            chatMessages.appendChild(messageElement);
+          }
+          
+          // Clear input
+          input.value = '';
+          
+          // Scroll to bottom
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+      }
+
+      // Function to handle reply messages
+      function handleReply(message) {
+        const replyMatch = message.match(/@(\w+)\s+(.+)/);
+        if (replyMatch) {
+          const [, repliedUser, repliedMessage] = replyMatch;
+          const chatMessages = document.getElementById('chat-messages');
+          const messageElement = document.createElement('div');
+          messageElement.classList.add('message', 'sent', 'reply');
+          messageElement.innerHTML = `
+            <div class="reply-content">Replying to ${repliedUser}: ${repliedMessage}</div>
+            <div class="user-status">
+              <span class="status-dot online"></span>
+              ${currentUser}
+            </div>
+            : ${message.replace(/@\w+\s+/, '')}
+          `;
+          chatMessages.appendChild(messageElement);
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+          return true;
+        }
+        return false;
+      }
+
+      // Add event listener for Enter key in chat input
+      document.addEventListener('DOMContentLoaded', function() {
+        const chatInput = document.getElementById('chat-input');
+        chatInput.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            sendMessage();
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
