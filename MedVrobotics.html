@@ -4,7 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="bubbles.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <title>MedV</title>
+    <!-- Add Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <!-- Add Socket.IO client -->
+    <script src="/socket.io/socket.io.js"></script>
     <style>
       * {
         margin: 0;
@@ -104,6 +113,25 @@
         width: 100%;
         height: 4px;
         background-color: #00adb5;
+        transition: all 0.3s ease;
+        border-radius: 2px;
+      }
+
+      .menu-btn:hover div {
+        background-color: #fff;
+        box-shadow: 0 0 10px #00adb5;
+      }
+
+      .menu-btn.active div:nth-child(1) {
+        transform: translateY(8.5px) rotate(45deg);
+      }
+
+      .menu-btn.active div:nth-child(2) {
+        opacity: 0;
+      }
+
+      .menu-btn.active div:nth-child(3) {
+        transform: translateY(-8.5px) rotate(-45deg);
       }
 
       .menu {
@@ -111,14 +139,25 @@
         position: absolute;
         top: 50px;
         right: 20px;
-        background-color: rgba(0, 0, 0, 0.8);
+        background-color: rgba(0, 0, 0, 0.9);
         width: 200px;
-        border-radius: 8px;
-        padding: 10px;
+        border-radius: 12px;
+        padding: 15px;
         text-align: center;
         opacity: 0;
-        transition: opacity 0.3s ease;
+        transform: translateY(-20px);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         z-index: 99;
+        box-shadow: 0 0 20px rgba(0, 173, 181, 0.2);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(0, 173, 181, 0.1);
+      }
+
+      .menu.active {
+        display: block;
+        opacity: 1;
+        transform: translateY(0);
+        box-shadow: 0 0 30px rgba(0, 173, 181, 0.3);
       }
 
       .menu a {
@@ -127,16 +166,41 @@
         color: white;
         text-decoration: none;
         font-size: 18px;
-        transition: background-color 0.3s ease;
+        transition: all 0.3s ease;
+        border-radius: 8px;
+        margin: 5px 0;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .menu a::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(0, 173, 181, 0.2),
+          transparent
+        );
+        transition: 0.5s;
       }
 
       .menu a:hover {
-        background-color: #575757;
+        background-color: rgba(0, 173, 181, 0.2);
+        transform: translateX(5px);
+        box-shadow: 0 0 15px rgba(0, 173, 181, 0.3);
       }
 
-      .menu-btn.active + .menu {
-        display: block;
-        opacity: 1;
+      .menu a:hover::before {
+        left: 100%;
+      }
+
+      .menu a:active {
+        transform: scale(0.95);
       }
 
       .tasks {
@@ -178,39 +242,113 @@
         background-color: #ff1a1a;
       }
 
+      /* Add Task Form Styles */
       .add-task-form {
         margin: 20px auto;
-        display: flex;
-        flex-direction: column;
-        max-width: 400px;
-        gap: 10px;
+        padding: 25px;
+        background: rgba(51, 51, 51, 0.95);
+        border-radius: 15px;
+        box-shadow: 0 0 20px rgba(0, 173, 181, 0.2);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(0, 173, 181, 0.1);
+        max-width: 500px;
         display: none;
+        flex-direction: column;
+        gap: 15px;
+        transform: translateY(0);
+        transition: all 0.3s ease;
       }
 
       .add-task-form.active {
         display: flex;
+        animation: slideDown 0.5s ease;
+      }
+
+      .add-task-form h2 {
+        color: #00adb5;
+        text-align: center;
+        margin-bottom: 10px;
+        font-size: 24px;
+        text-shadow: 0 0 10px rgba(0, 173, 181, 0.3);
       }
 
       .add-task-form input,
-      .add-task-form button {
-        padding: 10px;
+      .add-task-form select {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #444;
+        border-radius: 8px;
+        background-color: #333;
+        color: white;
         font-size: 16px;
+        transition: all 0.3s ease;
       }
 
-      .add-task-form input {
-        border: 1px solid #ccc;
-        border-radius: 5px;
+      .add-task-form input:focus,
+      .add-task-form select:focus {
+        border-color: #00adb5;
+        box-shadow: 0 0 10px rgba(0, 173, 181, 0.2);
+        outline: none;
+      }
+
+      .add-task-form input::placeholder {
+        color: #888;
       }
 
       .add-task-form button {
-        background-color: #00adb5;
+        background: linear-gradient(45deg, #00adb5, #008e92);
         color: white;
         border: none;
+        padding: 12px 25px;
+        border-radius: 8px;
         cursor: pointer;
+        font-size: 16px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        position: relative;
+        overflow: hidden;
       }
 
       .add-task-form button:hover {
-        background-color: #008e92;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 173, 181, 0.3);
+      }
+
+      .add-task-form button:active {
+        transform: translateY(0);
+      }
+
+      .add-task-form button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.2),
+          transparent
+        );
+        transition: 0.5s;
+      }
+
+      .add-task-form button:hover::before {
+        left: 100%;
+      }
+
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
 
       .heroImg:hover {
@@ -264,6 +402,8 @@
         .menu {
           width: 100%;
           right: 0;
+          border-radius: 0 0 12px 12px;
+          top: 60px;
         }
 
         header img {
@@ -277,6 +417,32 @@
 
         .heroImg {
           margin-top: 10px;
+        }
+
+        /* Chat section responsive styles */
+        .chat-section {
+          padding: 10px;
+          margin: 10px;
+        }
+
+        .chat-container {
+          height: 300px;
+        }
+
+        .message {
+          max-width: 85%;
+        }
+
+        .task-counts {
+          flex-direction: column;
+          gap: 5px;
+          font-size: 14px;
+        }
+
+        .task-item {
+          flex-direction: column;
+          gap: 10px;
+          text-align: center;
         }
       }
 
@@ -307,6 +473,109 @@
         header img {
           width: 70px;
           height: 70px;
+        }
+
+        /* Additional mobile styles */
+        .container {
+          padding-top: 60px;
+          padding-left: 5px;
+          padding-right: 5px;
+        }
+
+        .username-form {
+          width: 95%;
+          padding: 20px;
+        }
+
+        .chat-input-container {
+          padding: 10px;
+        }
+
+        .chat-input-container input {
+          font-size: 14px;
+        }
+
+        .chat-input-container button {
+          padding: 8px 15px;
+          font-size: 14px;
+        }
+
+        .online-users {
+          padding: 5px;
+        }
+
+        .user-status {
+          font-size: 12px;
+          padding: 3px 8px;
+        }
+      }
+
+      /* Add styles for very small devices */
+      @media screen and (max-width: 320px) {
+        .heroImg {
+          width: 150px;
+          height: 150px;
+        }
+
+        header img {
+          width: 60px;
+          height: 60px;
+        }
+
+        .task-counts {
+          font-size: 12px;
+        }
+
+        .message {
+          max-width: 90%;
+        }
+      }
+
+      /* Add styles for landscape orientation */
+      @media screen and (max-height: 500px) and (orientation: landscape) {
+        .hero {
+          padding-top: 20px;
+        }
+
+        .heroImg {
+          width: 150px;
+          height: 150px;
+        }
+
+        .chat-container {
+          height: 250px;
+        }
+
+        .container {
+          padding-top: 40px;
+        }
+      }
+
+      /* Add styles for tablets */
+      @media screen and (min-width: 769px) and (max-width: 1024px) {
+        .heroImg {
+          width: 220px;
+          height: 220px;
+        }
+
+        .chat-container {
+          height: 350px;
+        }
+
+        .message {
+          max-width: 75%;
+        }
+      }
+
+      /* Add styles for larger screens */
+      @media screen and (min-width: 1025px) {
+        .container {
+          max-width: 1200px;
+          margin: 0 auto;
+        }
+
+        .chat-section {
+          max-width: 1000px;
         }
       }
 
@@ -505,20 +774,287 @@
       .username-form button:hover {
         background-color: #008e92;
       }
+
+      /* Add Google Sign-In button styles */
+      .divider {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 20px 0;
+        color: #888;
+      }
+
+      .divider::before,
+      .divider::after {
+        content: '';
+        flex: 1;
+        border-bottom: 1px solid #555;
+      }
+
+      .divider span {
+        padding: 0 10px;
+      }
+
+      .google-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        background-color: #fff;
+        color: #333;
+        border: 1px solid #ddd;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        width: 100%;
+      }
+
+      .google-btn:hover {
+        background-color: #f5f5f5;
+      }
+
+      .google-btn img {
+        width: 18px;
+        height: 18px;
+      }
+
+      /* Add styles for the select dropdown */
+      .task-assign-select {
+        padding: 10px;
+        font-size: 16px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        background-color: #444;
+        color: white;
+        width: 100%;
+      }
+
+      .task-assign-select option {
+        background-color: #444;
+        color: white;
+      }
+
+      /* Members List Styles */
+      .members-section {
+        display: none;
+      }
+
+      .members-container {
+        background-color: #444;
+        border-radius: 8px;
+        padding: 20px;
+      }
+
+      .members-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 15px;
+      }
+
+      .member-card {
+        background-color: #555;
+        padding: 15px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: all 0.3s ease;
+      }
+
+      .member-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 173, 181, 0.2);
+      }
+
+      .member-status {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+
+      .member-status.online {
+        background-color: #00ff00;
+        box-shadow: 0 0 5px #00ff00;
+      }
+
+      .member-status.offline {
+        background-color: #888;
+      }
+
+      .member-name {
+        font-size: 16px;
+        color: white;
+      }
+
+      .member-name.admin {
+        color: #00adb5;
+      }
+
+      @media screen and (max-width: 768px) {
+        .members-list {
+          grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        }
+      }
+
+      /* Add styles for kick button */
+      .kick-button {
+        background: linear-gradient(45deg, #ff4c4c, #ff1a1a);
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 12px;
+        margin-top: 5px;
+        transition: all 0.3s ease;
+        opacity: 0;
+        transform: translateY(5px);
+      }
+
+      .member-card:hover .kick-button {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .kick-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0 10px rgba(255, 76, 76, 0.3);
+      }
+
+      .member-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+      }
+
+      .member-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+      }
+
+      /* Inbox Styles */
+      .inbox-section {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+        background-color: #333;
+        border-radius: 10px;
+        color: white;
+      }
+
+      .inbox-section h2 {
+        color: #00adb5;
+        text-align: center;
+        margin-bottom: 20px;
+        font-size: 24px;
+        text-shadow: 0 0 10px rgba(0, 173, 181, 0.3);
+      }
+
+      .inbox-container {
+        background-color: #444;
+        border-radius: 8px;
+        padding: 20px;
+      }
+
+      .inbox-tasks {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .inbox-task {
+        background-color: #555;
+        padding: 15px;
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.3s ease;
+      }
+
+      .inbox-task:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 173, 181, 0.2);
+      }
+
+      .inbox-task .task-info {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .inbox-task .task-section {
+        color: #00adb5;
+        font-size: 14px;
+      }
+
+      .inbox-task .task-name {
+        font-size: 16px;
+      }
+
+      .inbox-task .task-date {
+        color: #888;
+        font-size: 12px;
+      }
+
+      .inbox-task .task-status {
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 12px;
+        background-color: #00adb5;
+        color: white;
+      }
+
+      .inbox-task .task-status.completed {
+        background-color: #4CAF50;
+      }
     </style>
   </head>
   <body>
+    <!-- Add bubble effect container -->
+    <div class="bubbles">
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+    </div>
+
     <!-- Username Modal -->
     <div class="username-modal active" id="username-modal">
       <div class="username-form">
         <h2>Welcome to MedV-robotics</h2>
-        <p>Please enter your name to continue</p>
-        <input type="text" id="username-input" placeholder="Enter your name" />
-        <button onclick="setUsername()">Continue</button>
+        <div class="login-section">
+          <h3>Login</h3>
+          <input type="text" id="login-username" placeholder="Username" />
+          <input type="password" id="login-password" placeholder="Password" />
+          <button onclick="login()">Login</button>
+          <button onclick="showAdminPrompt()" class="admin-btn">Be an Admin</button>
+          <div class="divider">
+            <span>or</span>
+          </div>
+          <button class="google-btn" onclick="signInWithGoogle()">
+            <i class="fab fa-google"></i> Sign in with Google
+          </button>
+        </div>
+        <div class="register-section">
+          <h3>Create Account</h3>
+          <input type="text" id="register-username" placeholder="Username" />
+          <input type="password" id="register-password" placeholder="Password" />
+          <input type="password" id="confirm-password" placeholder="Confirm Password" />
+          <button onclick="register()">Create Account</button>
+        </div>
       </div>
     </div>
 
-    <div class="container">
+    <div class="container" style="display: none;">
       <header>
         <img src="WhatsApp Image 2025-03-26 at 23.15.07.png" alt="MedV logo" />
         <div class="task-counts">
@@ -540,6 +1076,9 @@
         <a href="#" onclick="showTasks('building-design')">Building & Design</a>
         <a href="#" onclick="showTasks('outreach')">Outreach</a>
         <a href="#" onclick="showChat()">Chat</a>
+        <a href="#" onclick="showInbox()">Inbox</a>
+        <a href="#" onclick="showAdminPrompt()">Be an Admin</a>
+        <a href="#" onclick="logout()">Logout</a>
       </div>
 
       <section class="hero">
@@ -551,10 +1090,15 @@
       </section>
 
       <!-- Task Form (initially hidden) -->
-      <div class="add-task-form" id="add-task-form">
-        <h2>Add Task</h2>
-        <input type="password" id="password" placeholder="Enter Password" />
-        <button onclick="validatePassword()">Submit</button>
+      <div class="add-task-form" id="add-task-form" style="display: none;">
+        <h2>Add New Task</h2>
+        <input type="text" id="task-name" placeholder="Enter task description..." />
+        <select id="task-person" class="task-assign-select">
+          <option value="">Select person to assign</option>
+        </select>
+        <button onclick="addTask()">
+          <i class="fas fa-plus"></i> Add Task
+        </button>
       </div>
 
       <!-- Task Sections (Initially Hidden) -->
@@ -576,59 +1120,187 @@
       <!-- Chat Section -->
       <section class="chat-section" id="chat-section" style="display: none;">
         <h2>Team Chat</h2>
-        <div class="online-users" id="online-users">
-          <!-- Online users will be added here -->
-        </div>
         <div class="chat-container">
           <div class="chat-messages" id="chat-messages"></div>
           <div class="chat-input-container">
-            <input type="text" id="chat-input" placeholder="Type your message..." />
+            <input type="text" id="message-input" placeholder="Type your message..." />
             <button onclick="sendMessage()">Send</button>
           </div>
         </div>
       </section>
 
+      <!-- Inbox Section -->
+      <section class="inbox-section" id="inbox-section" style="display: none;">
+        <h2>Your Tasks</h2>
+        <div class="inbox-container">
+          <div class="inbox-tasks" id="inbox-tasks">
+            <!-- Tasks will be added here -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Members List Section -->
+      <section class="members-section" id="members-section" style="display: none;">
+        <h2>Team Members</h2>
+        <div class="members-container">
+          <div class="members-list" id="members-list">
+            <!-- Members will be added here -->
+          </div>
+        </div>
+      </section>
+
       <hr />
-      <footer>
-        <!-- Optional footer content -->
+      <footer style="text-align: center; padding: 20px; color: #888; font-size: 14px; margin-top: 30px;">
+        <p>Created by <span style="color: #00adb5; font-weight: 500;">Haouat Taha</span></p>
+        <p style="font-size: 12px; margin-top: 5px;">© 2024 MedV-robotics. All rights reserved.</p>
       </footer>
     </div>
 
     <script>
+      // Firebase configuration and initialization
+      const firebaseConfig = {
+        apiKey: "AIzaSyBERZXAKH6nML_gQpW7ZKMKOLEng87G3to",
+        authDomain: "medv-robotics.firebaseapp.com",
+        databaseURL: "https://medv-robotics-default-rtdb.firebaseio.com",
+        projectId: "medv-robotics",
+        storageBucket: "medv-robotics.firebasestorage.app",
+        messagingSenderId: "491233383613",
+        appId: "1:491233383613:web:a075568d3cb962e57453d4",
+        measurementId: "G-PHF5Z3VS8K"
+      };
+
+      // Initialize Firebase
+      let auth;
+      let database;
+      
+      // Wait for Firebase to be ready
+      window.addEventListener('load', function() {
+        if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+        }
+        auth = firebase.auth();
+        database = firebase.database();
+        
+        // Check for existing Google Sign-In
+        auth.onAuthStateChanged((user) => {
+          if (user) {
+            currentUser = user.displayName;
+            localStorage.setItem('currentUser', currentUser);
+            socket.emit('newUser', currentUser);
+            document.getElementById('username-modal').classList.remove('active');
+            document.querySelector('.container').style.display = 'block';
+            updateOnlineUsers();
+          }
+        });
+      });
+
       let currentUser = null;
       let onlineUsers = new Set();
+      const socket = io('http://192.168.0.113:8080', {
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000
+      });
 
-      // Function to set username
-      function setUsername() {
-        const usernameInput = document.getElementById('username-input');
-        const username = usernameInput.value.trim();
+      // Add connection status logging
+      socket.on('connect', () => {
+        console.log('Connected to server');
+      });
+
+      socket.on('connect_error', (error) => {
+        console.error('Connection error:', error);
+      });
+
+      socket.on('disconnect', () => {
+        console.log('Disconnected from server');
+      });
+
+      // Function to send a message
+      function sendMessage() {
+        const messageInput = document.getElementById('message-input');
+        const message = messageInput.value.trim();
         
-        if (username) {
-          currentUser = username;
-          onlineUsers.add(username);
-          document.getElementById('username-modal').classList.remove('active');
-          document.querySelector('.container').style.display = 'block';
-          updateOnlineUsers();
-        } else {
-          alert('Please enter a valid name');
+        if (message && currentUser) {
+          socket.emit('sendMessage', {
+            username: currentUser,
+            content: message
+          });
+          messageInput.value = '';
         }
       }
 
+      // Listen for new messages
+      socket.on('newMessage', (message) => {
+        const chatMessages = document.getElementById('chat-messages');
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message');
+        messageElement.classList.add(message.username === currentUser ? 'sent' : 'received');
+        
+        // Add admin badge if the user is an admin
+        const isAdminUser = message.username.startsWith('admin_');
+        const displayUsername = isAdminUser ? message.username.replace('admin_', '') + ' 👑' : message.username;
+        
+        messageElement.innerHTML = `
+          <div class="user-status">
+            <span class="status-dot online"></span>
+            ${displayUsername}
+          </div>
+          : ${message.content}
+        `;
+        chatMessages.appendChild(messageElement);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      });
+
+      // Listen for new users joining
+      socket.on('userJoined', (users) => {
+        onlineUsers = new Set(users);
+        updateOnlineUsers();
+      });
+
+      // Listen for user disconnection
+      socket.on('userLeft', (username) => {
+        if (username) {
+          onlineUsers.delete(username);
+          updateOnlineUsers();
+        }
+      });
+
       // Function to update online users list
       function updateOnlineUsers() {
-        const onlineUsersContainer = document.getElementById('online-users');
-        onlineUsersContainer.innerHTML = '';
+        const taskPersonSelect = document.getElementById('task-person');
         
-        onlineUsers.forEach(user => {
-          const userStatus = document.createElement('div');
-          userStatus.className = 'user-status';
-          userStatus.innerHTML = `
-            <span class="status-dot online"></span>
-            ${user}
-          `;
-          onlineUsersContainer.appendChild(userStatus);
-        });
+        // Clear existing options except the first one
+        if (taskPersonSelect) {
+          taskPersonSelect.innerHTML = '<option value="">Select Person to Assign</option>';
+        }
+        
+        // Get all registered users from Firebase
+        database.ref('registeredUsers').once('value')
+          .then((snapshot) => {
+            const users = snapshot.val() || {};
+            Object.keys(users).forEach(username => {
+              // Skip admin users in the dropdown
+              if (!username.startsWith('admin_')) {
+                const option = document.createElement('option');
+                option.value = username;
+                option.textContent = username;
+                taskPersonSelect.appendChild(option);
+              }
+            });
+          });
       }
+
+      // Add event listener for Enter key in chat input
+      document.addEventListener('DOMContentLoaded', function() {
+        const messageInput = document.getElementById('message-input');
+        if (messageInput) {
+          messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+              sendMessage();
+            }
+          });
+        }
+      });
 
       // Function to toggle the visibility of the menu when the hamburger button is clicked
       function toggleMenu(event) {
@@ -646,12 +1318,20 @@
         document.getElementById('chat-section').style.display = 'none';
 
         const selectedTask = document.getElementById(section);
-        const addTaskForm = document.getElementById('add-task-form');
         if (selectedTask) {
           selectedTask.classList.add('active');
         }
 
-        addTaskForm.classList.add('active'); // Show the "Add Task" form
+        // Show add task form for admin users when they click on a task section
+        const addTaskForm = document.getElementById('add-task-form');
+        if (isAdmin()) {
+          addTaskForm.style.display = 'flex';
+          addTaskForm.classList.add('active');
+        } else {
+          addTaskForm.style.display = 'none';
+          addTaskForm.classList.remove('active');
+        }
+
         selectedTask.scrollIntoView({ behavior: "smooth" });
 
         const menu = document.querySelector('.menu');
@@ -664,7 +1344,7 @@
       function showChat() {
         const allTasks = document.querySelectorAll('.tasks');
         allTasks.forEach(task => task.classList.remove('active'));
-        document.getElementById('add-task-form').classList.remove('active');
+        document.getElementById('add-task-form').style.display = 'none'; // Hide task form when showing chat
         document.getElementById('chat-section').style.display = 'block';
         document.getElementById('chat-section').scrollIntoView({ behavior: "smooth" });
         updateOnlineUsers();
@@ -692,125 +1372,381 @@
         }
       }
 
-      // Function to add a task
+      // Function to add a task (admin only)
       function addTask() {
+        if (!isAdmin()) {
+          alert('Only administrators can add tasks');
+          return;
+        }
+
         const taskName = document.getElementById('task-name').value;
         const taskPerson = document.getElementById('task-person').value;
 
         if (taskName && taskPerson) {
           const activeSection = document.querySelector('.tasks.active');
-          const taskList = activeSection.querySelector('.task-list');
+          if (!activeSection) {
+            alert('Please select a task section first');
+            return;
+          }
 
+          const sectionId = activeSection.id;
+          const taskId = Date.now().toString();
+
+          // Store task in Firebase
+          database.ref('tasks').child(taskId).set({
+            name: taskName,
+            assignedTo: taskPerson,
+            section: sectionId,
+            assignedDate: new Date().toISOString(),
+            completed: false
+          });
+
+          // Emit the new task to all users
+          socket.emit('addTask', {
+            sectionId: sectionId,
+            taskName: taskName,
+            taskPerson: taskPerson
+          });
+
+          // Clear the form
+          document.getElementById('task-name').value = '';
+          document.getElementById('task-person').value = '';
+        } else {
+          alert('Please fill in both task name and assignee');
+        }
+      }
+
+      // Listen for new tasks
+      socket.on('newTask', (taskData) => {
+        const taskList = document.getElementById(`${taskData.sectionId}-tasks`);
+        if (taskList) {
           const taskItem = document.createElement('div');
           taskItem.classList.add('task-item', 'new-task');
           taskItem.innerHTML = `
-            <span>${taskName} - Assigned to: ${taskPerson}</span>
-            <button onclick="deleteTask(this)">Delete</button>
+            <span>${taskData.taskName} - Assigned to: ${taskData.taskPerson}</span>
+            ${isAdmin() ? '<button onclick="deleteTask(this)">Delete</button>' : ''}
           `;
           taskList.appendChild(taskItem);
-
-          updateTaskCount(activeSection.id); // Update the task count for the active section
-
-          document.getElementById('task-name').value = '';
-          document.getElementById('task-person').value = '';
+          updateTaskCount(taskData.sectionId);
         }
-      }
-
-      // Function to update task counts for all sections
-      function updateTaskCount(sectionId) {
-        const taskList = document.getElementById(`${sectionId}-tasks`);
-        const taskCount = taskList.children.length;
-        
-        // Map section IDs to display names
-        const displayNames = {
-          'programming': 'Programming',
-          'building-design': 'Building & Design',
-          'outreach': 'Outreach'
-        };
-
-        document.getElementById(`${sectionId}-count`).textContent = `${displayNames[sectionId]}: ${taskCount}`;
-      }
-
-      // Function to delete a task
-      function deleteTask(button) {
-        const taskItem = button.parentElement;
-        taskItem.remove();
-
-        const activeSection = document.querySelector('.tasks.active');
-        updateTaskCount(activeSection.id); // Update the task count after deletion
-      }
-
-      // Function to send a message
-      function sendMessage() {
-        const input = document.getElementById('chat-input');
-        const message = input.value.trim();
-        
-        if (message) {
-          if (!handleReply(message)) {
-            const chatMessages = document.getElementById('chat-messages');
-            const messageElement = document.createElement('div');
-            messageElement.classList.add('message', 'sent');
-            messageElement.innerHTML = `
-              <div class="user-status">
-                <span class="status-dot online"></span>
-                ${currentUser}
-              </div>
-              : ${message}
-            `;
-
-            // Add double-click event for reply
-            messageElement.addEventListener('dblclick', function(e) {
-              e.stopPropagation();
-              const originalMessage = message;
-              const originalUser = currentUser;
-              const chatInput = document.getElementById('chat-input');
-              chatInput.value = `@${originalUser} ${originalMessage}\n`;
-              chatInput.focus();
-            });
-
-            chatMessages.appendChild(messageElement);
-          }
-          
-          // Clear input
-          input.value = '';
-          
-          // Scroll to bottom
-          chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-      }
-
-      // Function to handle reply messages
-      function handleReply(message) {
-        const replyMatch = message.match(/@(\w+)\s+(.+)/);
-        if (replyMatch) {
-          const [, repliedUser, repliedMessage] = replyMatch;
-          const chatMessages = document.getElementById('chat-messages');
-          const messageElement = document.createElement('div');
-          messageElement.classList.add('message', 'sent', 'reply');
-          messageElement.innerHTML = `
-            <div class="reply-content">Replying to ${repliedUser}: ${repliedMessage}</div>
-            <div class="user-status">
-              <span class="status-dot online"></span>
-              ${currentUser}
-            </div>
-            : ${message.replace(/@\w+\s+/, '')}
-          `;
-          chatMessages.appendChild(messageElement);
-          chatMessages.scrollTop = chatMessages.scrollHeight;
-          return true;
-        }
-        return false;
-      }
-
-      // Add event listener for Enter key in chat input
-      document.addEventListener('DOMContentLoaded', function() {
-        const chatInput = document.getElementById('chat-input');
-        chatInput.addEventListener('keypress', function(e) {
-          if (e.key === 'Enter') {
-            sendMessage();
-          }
-        });
+        updateInbox();
       });
+
+      // Function to delete a task (admin only)
+      function deleteTask(button) {
+        if (!isAdmin()) {
+          alert('Only administrators can delete tasks');
+          return;
+        }
+
+        const taskItem = button.parentElement;
+        const taskList = taskItem.parentElement;
+        const activeSection = document.querySelector('.tasks.active');
+        const sectionId = activeSection.id;
+        
+        // Get task details before removing
+        const taskText = taskItem.querySelector('span').textContent;
+        const taskName = taskText.split(' - Assigned to: ')[0];
+        const taskPerson = taskText.split(' - Assigned to: ')[1];
+
+        // Emit task deletion to all users
+        socket.emit('deleteTask', {
+          sectionId: sectionId,
+          taskName: taskName,
+          taskPerson: taskPerson
+        });
+
+        taskItem.remove();
+        updateTaskCount(sectionId);
+      }
+
+      // Listen for task deletions from other users
+      socket.on('taskDeleted', (taskData) => {
+        const taskList = document.getElementById(`${taskData.sectionId}-tasks`);
+        if (taskList) {
+          const taskItem = document.querySelector(`#${taskData.sectionId}-tasks .task-item:contains(${taskData.taskName})`);
+          if (taskItem) {
+            taskItem.remove();
+            updateTaskCount(taskData.sectionId);
+          }
+        }
+      });
+
+      // Function to update task count
+      function updateTaskCount(sectionId) {
+        const taskCount = document.getElementById(`${sectionId}-tasks`).childElementCount;
+        document.getElementById(`${sectionId}-count`).textContent = `${sectionId.charAt(0).toUpperCase() + sectionId.slice(1)} Tasks: ${taskCount}`;
+      }
+
+      // Function to check if the current user is an admin
+      function isAdmin() {
+        return currentUser && currentUser.startsWith('admin_');
+      }
+
+      // Function to update the login function to properly handle chat
+      function login() {
+        const username = document.getElementById('login-username').value;
+        const password = document.getElementById('login-password').value;
+
+        if (username && password) {
+          const savedPassword = localStorage.getItem(`user_${username}`);
+          if (savedPassword === password) {
+            currentUser = username;
+            localStorage.setItem('currentUser', currentUser);
+            
+            // Add user to Firebase registered users
+            database.ref('registeredUsers').child(username).set({
+              username: username,
+              lastSeen: new Date().toISOString()
+            });
+            
+            socket.emit('newUser', currentUser);
+            document.getElementById('username-modal').classList.remove('active');
+            document.querySelector('.container').style.display = 'block';
+            updateOnlineUsers();
+            
+            // Show chat section by default
+            showChat();
+          } else {
+            alert('Incorrect password');
+          }
+        } else {
+          alert('Please enter both username and password');
+        }
+      }
+
+      // Function to update the register function to properly handle chat
+      function register() {
+        const username = document.getElementById('register-username').value;
+        const password = document.getElementById('register-password').value;
+        const confirmPassword = document.getElementById('confirm-password').value;
+
+        if (username && password && confirmPassword) {
+          if (password === confirmPassword) {
+            localStorage.setItem(`user_${username}`, password);
+            currentUser = username;
+            localStorage.setItem('currentUser', currentUser);
+            
+            // Add user to Firebase registered users
+            database.ref('registeredUsers').child(username).set({
+              username: username,
+              lastSeen: new Date().toISOString()
+            });
+            
+            socket.emit('newUser', currentUser);
+            document.getElementById('username-modal').classList.remove('active');
+            document.querySelector('.container').style.display = 'block';
+            updateOnlineUsers();
+            
+            // Show chat section by default
+            showChat();
+          } else {
+            alert('Passwords do not match');
+          }
+        } else {
+          alert('Please fill in all fields');
+        }
+      }
+
+      // Function to update the Google Sign-In function to properly handle chat
+      function signInWithGoogle() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.addScope('https://www.googleapis.com/auth/userinfo.email');
+        provider.addScope('https://www.googleapis.com/auth/userinfo.profile');
+        
+        auth.signInWithPopup(provider)
+          .then((result) => {
+            const user = result.user;
+            currentUser = user.displayName;
+            localStorage.setItem('currentUser', currentUser);
+            
+            // Add user to Firebase registered users
+            database.ref('registeredUsers').child(currentUser).set({
+              username: currentUser,
+              lastSeen: new Date().toISOString()
+            });
+            
+            socket.emit('newUser', currentUser);
+            document.getElementById('username-modal').classList.remove('active');
+            document.querySelector('.container').style.display = 'block';
+            updateOnlineUsers();
+            
+            // Show chat section by default
+            showChat();
+          })
+          .catch((error) => {
+            console.error('Error signing in with Google:', error);
+            alert('Error signing in with Google: ' + error.message);
+          });
+      }
+
+      // Function to show chat section
+      function showChat() {
+        const allTasks = document.querySelectorAll('.tasks');
+        allTasks.forEach(task => task.classList.remove('active'));
+        document.getElementById('add-task-form').style.display = 'none'; // Hide task form when showing chat
+        document.getElementById('chat-section').style.display = 'block';
+        document.getElementById('chat-section').scrollIntoView({ behavior: "smooth" });
+        updateOnlineUsers();
+
+        const menu = document.querySelector('.menu');
+        const menuBtn = document.querySelector('.menu-btn');
+        menu.classList.remove('active');
+        menuBtn.classList.remove('active');
+      }
+
+      // Function to show admin prompt
+      function showAdminPrompt() {
+        const password = prompt('Enter admin password:');
+        
+        if (password === 'ftcmedv') {
+          // Get username from login field or Google account
+          const loginUsername = document.getElementById('login-username').value;
+          const username = loginUsername || currentUser;
+          
+          if (username) {
+            currentUser = 'admin_' + username;
+            localStorage.setItem('currentUser', currentUser);
+            
+            // Add user to Firebase registered users
+            database.ref('registeredUsers').child(currentUser).set({
+              username: currentUser,
+              lastSeen: new Date().toISOString()
+            });
+            
+            socket.emit('newUser', currentUser);
+            document.getElementById('username-modal').classList.remove('active');
+            document.querySelector('.container').style.display = 'block';
+            updateOnlineUsers();
+            
+            // Show chat section by default
+            showChat();
+            alert('Admin access granted! You can now add and delete tasks.');
+          } else {
+            alert('Please login first or enter your username in the login field');
+          }
+        } else {
+          alert('Incorrect admin password');
+        }
+      }
+
+      // Function to logout
+      function logout() {
+        currentUser = null;
+        localStorage.removeItem('currentUser');
+        socket.emit('userLeft', currentUser);
+        document.getElementById('username-modal').classList.add('active');
+        document.querySelector('.container').style.display = 'none';
+        updateOnlineUsers();
+      }
+
+      // Function to show members list
+      function showMembersList() {
+        const allTasks = document.querySelectorAll('.tasks');
+        allTasks.forEach(task => task.classList.remove('active'));
+        document.getElementById('chat-section').style.display = 'none';
+        document.getElementById('add-task-form').style.display = 'none';
+        document.getElementById('members-section').style.display = 'block';
+        document.getElementById('members-section').scrollIntoView({ behavior: "smooth" });
+        updateMembersList();
+
+        const menu = document.querySelector('.menu');
+        const menuBtn = document.querySelector('.menu-btn');
+        menu.classList.remove('active');
+        menuBtn.classList.remove('active');
+      }
+
+      // Function to update members list
+      function updateMembersList() {
+        const membersList = document.getElementById('members-list');
+        membersList.innerHTML = '';
+
+        // Get all registered users from Firebase
+        database.ref('registeredUsers').once('value')
+          .then((snapshot) => {
+            const users = snapshot.val() || {};
+            Object.keys(users).forEach(username => {
+              const isAdmin = username.startsWith('admin_');
+              const displayName = isAdmin ? username.replace('admin_', '') + ' 👑' : username;
+              const isOnline = onlineUsers.has(username);
+              
+              const memberCard = document.createElement('div');
+              memberCard.className = 'member-card';
+              memberCard.innerHTML = `
+                <div class="member-info">
+                  <span class="member-status ${isOnline ? 'online' : 'offline'}"></span>
+                  <span class="member-name ${isAdmin ? 'admin' : ''}">${displayName}</span>
+                </div>
+                ${isAdmin() && !isAdmin ? `<button class="kick-button" onclick="kickUser('${username}')">Kick User</button>` : ''}
+              `;
+              membersList.appendChild(memberCard);
+            });
+          });
+      }
+
+      // Function to kick a user
+      function kickUser(username) {
+        if (!isAdmin()) {
+          alert('Only administrators can kick users');
+          return;
+        }
+
+        if (confirm(`Are you sure you want to kick ${username}?`)) {
+          socket.emit('kickUser', username);
+          alert(`${username} has been kicked from the server`);
+        }
+      }
+
+      // Listen for kick events
+      socket.on('userKicked', (username) => {
+        if (currentUser === username) {
+          alert('You have been kicked from the server by an administrator');
+          logout();
+        }
+      });
+
+      // Function to show inbox
+      function showInbox() {
+        const allTasks = document.querySelectorAll('.tasks');
+        allTasks.forEach(task => task.classList.remove('active'));
+        document.getElementById('chat-section').style.display = 'none';
+        document.getElementById('add-task-form').style.display = 'none';
+        document.getElementById('inbox-section').style.display = 'block';
+        document.getElementById('inbox-section').scrollIntoView({ behavior: "smooth" });
+        updateInbox();
+
+        const menu = document.querySelector('.menu');
+        const menuBtn = document.querySelector('.menu-btn');
+        menu.classList.remove('active');
+        menuBtn.classList.remove('active');
+      }
+
+      // Function to update inbox
+      function updateInbox() {
+        const inboxTasks = document.getElementById('inbox-tasks');
+        inboxTasks.innerHTML = '';
+
+        // Get all tasks from Firebase
+        database.ref('tasks').once('value')
+          .then((snapshot) => {
+            const tasks = snapshot.val() || {};
+            Object.entries(tasks).forEach(([taskId, task]) => {
+              if (task.assignedTo === currentUser) {
+                const taskElement = document.createElement('div');
+                taskElement.className = 'inbox-task';
+                taskElement.innerHTML = `
+                  <div class="task-info">
+                    <span class="task-section">${task.section}</span>
+                    <span class="task-name">${task.name}</span>
+                    <span class="task-date">Assigned: ${new Date(task.assignedDate).toLocaleDateString()}</span>
+                  </div>
+                  <span class="task-status ${task.completed ? 'completed' : ''}">${task.completed ? 'Completed' : 'Pending'}</span>
+                `;
+                inboxTasks.appendChild(taskElement);
+              }
+            });
+          });
+      }
     </script>
   </body>
 </html>
